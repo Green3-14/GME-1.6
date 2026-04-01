@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clever | Log in</title>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAANCAIAAAASSxgVAAABqUlEQVR4nBSRQWsUQRCF6/X0dByXFTdqokZMNLkYsgoiay4eIogXRdCDoPgbFDz7A8SbFy8ePOi/8CQYQtSwhyW4GxQPJiOuWTTJrpOe7qrU3PrRVa++qmeXHu+BiYRCiViKEVEZAyBIQRDmaCxYH6TfYymfmpCpcXGW8j7yHP92YRjaZkWIA51sxAc3cWfJEdnKlmS951++iV97iVrbcl+O1/npw6TVzH5shvZ6EQPNzSRz027+/KjbFYlk1W1xgVrNQ93v/vnrot2xHDF7xs/PxtU1FzxcIraeyWLThEAfPpVrnXTqmFLTYNu+/5lmTrRCFMsCkw0oRH+baw7eiy+g/kfrbEhnAVFM9NIfKCkmxs1oqK1IrcQSgz+IvlpN68zODlbabC2utdLLF8o8l9+/qJaFe7f9kRrvj/RUUmEuf5HPV/9fuZg9e2LaHR8jnZt2lxbsicbw7btEXW2aKKZ58So+uju8dWNs5uxhIk2AV1aLj8vgkpQM1+/vKX/wnDk6rRefZAPZ2kryTez+pcRApdVMNKzUoBjRRg/fNipZIYNSC92PBQcAAAD//3CcGhwAAAAGSURBVAMAyfHjzgCunJ0AAAAASUVORK5CYII=">
+
+  <style>
+    /* Page background (launcher) */
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+
+      background: linear-gradient(135deg, #4f46e5, #3b82f6, #06b6d4);
+      background-size: 400% 400%;
+      animation: gradientShift 12s ease infinite;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 200%;
+      background-image: radial-gradient(white 2px, transparent 2px);
+      background-size: 40px 40px;
+      opacity: 0.25;
+      animation: moveDots 20s linear infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes moveDots {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-200px, -200px); }
+    }
+
+    #loginBox {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      width: 320px;
+      position: relative;
+      z-index: 10;
+      backdrop-filter: blur(6px);
+      text-align: center;
+    }
+
+    #loginBox h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    #loginBox p.subtitle {
+      margin: 0 0 15px 0;
+      font-size: 13px;
+      color: #555;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #6a5af9, #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: 0.25s ease;
+      box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
+      margin-top: 8px;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 18px rgba(79, 70, 229, 0.9);
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #665;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loginBox">
+    <h2>Generic Gaming Engine</h2>
+    <p class="subtitle">Made with HTML and 55 GMS</p>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <div id="error" class="error"></div>
+    <div class="hint">In the game, press <b>~</b> or <b>`</b> to exit to Clever.</div>
+  </div>
+
+<script>
+  const VALID_USERNAME = "admin";
+  const VALID_PASSWORD = "password123";
+
+  const cleverURL =
+    "https://clever.com/oauth/authorize?channel=clever&client_id=4c63c1cf623dce82caac&confirmed=true&redirect_uri=https%3A%2F%2Fclever.com%2Fin%2Fauth_callback&response_type=code&state=72ebd98f122166e9e516fb2c8aae1f8085300648e43a91970179fc4dc8cd1827&district_id=5d4d9facff76bc000146dc2c";
+
+  let popupWindow = null; // keep reference for backup escape key
+
+  function checkLogin() {
+    const u = document.getElementById("username").value;
+    const p = document.getElementById("password").value;
+    const errorDiv = document.getElementById("error");
+
+    if (u === VALID_USERNAME && p === VALID_PASSWORD) {
+      errorDiv.textContent = "";
+      launchApp();
+    } else {
+      errorDiv.textContent = "Invalid username or password";
+    }
+  }
+
+  function launchApp() {
+    // Must open popup synchronously from click to satisfy Chrome/ChromeOS
+    const w = window.open("about:blank");
+
+    if (!w) {
+      alert("Popup blocked. Please allow popups for this file/site.");
+      return;
+    }
+
+    popupWindow = w;
+
+    const style = `
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: "Comic Sans MS", "Comic Sans", cursive;
+        background: linear-gradient(135deg, #0077ff, #66ccff, #00cc66);
+        background-size: cover;
+        height: 100vh;
+        color: white;
+      }
+      h1 {
+        font-size: 32px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+      }
+      h5 {
+        margin-top: 0;
+        font-weight: normal;
+      }
+      #exitBtn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 8px 14px;
+        background: #ffffff;
+        color: #0077ff;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 9999;
+      }
+      iframe {
+        display: block;
+        margin-top: 10px;
+      }
+    `;
+
+    w.document.write(`
+      <html>
+        <head>
+          <title>Clever | Log in</title>
+          <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAANCAIAAAASSxgVAAABqUlEQVR4nBSRQWsUQRCF6/X0dByXFTdqokZMNLkYsgoiay4eIogXRdCDoPgbFDz7A8SbFy8ePOi/8CQYQtSwhyW4GxQPJiOuWTTJrpOe7qrU3PrRVa++qmeXHu+BiYRCiViKEVEZAyBIQRDmaCxYH6TfYymfmpCpcXGW8j7yHP92YRjaZkWIA51sxAc3cWfJEdnKlmS951++iV97iVrbcl+O1/npw6TVzH5shvZ6EQPNzSRz027+/KjbFYlk1W1xgVrNQ93v/vnrot2xHDF7xs/PxtU1FzxcIraeyWLThEAfPpVrnXTqmFLTYNu+/5lmTrRCFMsCkw0oRH+baw7eiy+g/kfrbEhnAVFM9NIfKCkmxs1oqK1IrcQSgz+IvlpN68zODlbabC2utdLLF8o8l9+/qJaFe7f9kRrvj/RUUmEuf5HPV/9fuZg9e2LaHR8jnZt2lxbsicbw7btEXW2aKKZ58So+uju8dWNs5uxhIk2AV1aLj8vgkpQM1+/vKX/wnDk6rRefZAPZ2kryTez+pcRApdVMNKzUoBjRRg/fNipZIYNSC92PBQcAAAD//3CcGhwAAAAGSURBVAMAyfHjzgCunJ0AAAAASUVORK5CYII=">
+          <style>${style}</style>
+        </head>
+        <body>
+          <button id="exitBtn">Exit</button>
+          <h1>Genaric Gaming Engine - Made with HTML and 55 GMS</h1>
+          <h5>Press <b>~</b> or <b>\`</b> to exit to Clever.</h5>
+
+          <iframe 
+            src="https://zapscroll.sbs"
+            width="1450"
+            height="850"
+            style="border:0;"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-orientation-lock allow-modals allow-pointer-lock"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin">
+          </iframe>
+
+          <script>
+            const cleverURL = '${cleverURL}';
+
+            document.getElementById('exitBtn').onclick = () => {
+              location.href = cleverURL;
+            };
+
+            document.onkeydown = (e) => {
+              if (e.key === '~' || e.key === '\`') {
+                location.href = cleverURL;
+              }
+            };
+          <\/script>
+        </body>
+      </html>
+    `);
+
+    w.document.close();
+
+    // Optional: visually change launcher after launch
+    document.getElementById("loginBox").innerHTML =
+      "<h2 style='margin:0 0 10px;'>Game launched</h2>" +
+      "<p style='font-size:14px;'>You can close this window, or press <b>~</b> in the popup to exit to Clever.</p>";
+  }
+
+  // Attach login handler to button + Enter key
+  document.getElementById("loginBtn").addEventListener("click", checkLogin);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      checkLogin();
+    }
+  });
+
+  // Backup escape key from launcher → redirect popup if it’s open
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "~" || e.key === "`") {
+      if (popupWindow && !popupWindow.closed) {
+        popupWindow.location.href = cleverURL;
+      }
+    }
+  });
+</script>
+</body>
+</html>
